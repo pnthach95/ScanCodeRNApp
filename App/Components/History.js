@@ -3,7 +3,7 @@ import { Text, View, TouchableOpacity, FlatList, StyleSheet } from 'react-native
 import Modal from 'react-native-modal';
 
 import { Codes } from '../database';
-import styles from '../Style'
+import styles from '../Style';
 import { copyToClipboard } from '../Util';
 
 export default class HistoryView extends PureComponent {
@@ -16,12 +16,12 @@ export default class HistoryView extends PureComponent {
   };
 
   componentDidMount() {
-    let data = Codes.data()
-    let con = JSON.stringify(data)
-    this.setState({ list: data })
+    let data = Codes.data();
+    let con = JSON.stringify(data);
+    this.setState({ list: data });
     console.log('HistoryView.componentDidMount', con);
     Codes.onInsert(({ changed }) => {
-      this.setState({ list: [...this.state.list, changed[0]] })
+      this.setState({ list: [...this.state.list, changed[0]] });
       console.log('HistoryView.onInsert', changed);
     })
   }
@@ -35,9 +35,11 @@ export default class HistoryView extends PureComponent {
   }
 
   _removeAll = () => {
-    this.state.list.forEach(element => {
-      Codes.remove(element.id);
-    });
+    Codes.perform(function (db) {
+      Codes.data().forEach(function (item) {
+        db.remove(item)
+      })
+    })
     this.setState({ list: [] });
   }
 
