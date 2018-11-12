@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react';
 import { Text, View, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
+import Swipeable from 'react-native-swipeable';
 
 import { Codes } from '../database';
 import styles from '../Style';
@@ -16,18 +17,21 @@ export default class HistoryView extends PureComponent {
   };
 
   componentDidMount() {
-    let data = Codes.data();
-    let con = JSON.stringify(data);
-    this.setState({ list: data });
-    console.log('HistoryView.componentDidMount', con);
+    Codes.onLoaded(() => {
+      let data = Codes.data();
+      this.setState({ list: data });
+    });
     Codes.onInsert(({ changed }) => {
       this.setState({ list: [...this.state.list, changed[0]] });
       console.log('HistoryView.onInsert', changed);
-    })
+    });
+    Codes.onRemove(({ changed }) => {
+      let data = this.state.list.filter((value, index) => value.id != changed.id)
+      this.setState({ list: data })
+    });
   }
 
-  _closeModal = () =>
-    this.setState({ isModalVisible: false });
+  _closeModal = () => this.setState({ isModalVisible: false });
 
   _openModal = ({ data, type, time }) => () => {
     console.log('HistoryView._openModal');
@@ -39,19 +43,29 @@ export default class HistoryView extends PureComponent {
       Codes.data().forEach(function (item) {
         db.remove(item)
       })
-    })
+    });
     this.setState({ list: [] });
   }
 
   _keyExtractor = (item, index) => `code ${index}`
 
-  _renderItem = ({ item }) => <TouchableOpacity onPress={this._openModal(item)}>
-    <View style={localStyles.item}>
-      <Text>Date: {item.time}</Text>
-      <Text>{item.data}</Text>
-      <Text>Type: {item.type}</Text>
-    </View>
-  </TouchableOpacity>
+  _removeItem = (item) => () => Codes.remove(item.id)
+
+  rightButtons = <View style={localStyles.delete}>
+    <Text style={styles.whiteText}>Delete</Text>
+  </View>
+
+  _renderItem = ({ item }) =>
+    <Swipeable rightContent={this.rightButtons}
+      onRightActionRelease={this._removeItem(item)}>
+      <TouchableOpacity onPress={this._openModal(item)}>
+        <View style={localStyles.item}>
+          <Text>Date: {item.time}</Text>
+          <Text>{item.data}</Text>
+          <Text>Type: {item.type}</Text>
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
 
   render() {
     if (this.state.list.length == 0)
@@ -113,5 +127,14 @@ const localStyles = StyleSheet.create({
   footer: {
     backgroundColor: 'white',
     padding: 5
+  },
+  delete: {
+    padding: 10,
+    marginVertical: 5,
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'red'
   }
 })
