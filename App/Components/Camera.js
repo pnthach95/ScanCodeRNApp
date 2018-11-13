@@ -3,8 +3,10 @@ import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { RNCamera } from 'react-native-camera';
 import Modal from 'react-native-modal';
 import moment from 'moment';
+
+import InsideModal from './InsideModal';
 import { Codes } from '../database';
-import styles from '../Style'
+import styles from '../Style';
 import { copyToClipboard } from '../Util';
 
 export default class CameraView extends PureComponent {
@@ -50,9 +52,7 @@ export default class CameraView extends PureComponent {
         <Modal isVisible={this.state.isModalVisible}
           onBackButtonPress={this._closeModal} >
           <View style={styles.modalContent}>
-            <Text>Date: {this.state.time}</Text>
-            <Text>Data: {this.state.data}</Text>
-            <Text>Type: {this.state.type}</Text>
+            <InsideModal time={this.state.time} type={this.state.type} data={this.state.data} />
             <View style={styles.buttons}>
               <TouchableOpacity onPress={this._closeModal}
                 style={styles.button}>

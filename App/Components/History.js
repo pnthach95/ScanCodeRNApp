@@ -4,6 +4,7 @@ import Modal from 'react-native-modal';
 import Swipeable from 'react-native-swipeable';
 import Toast from 'react-native-root-toast';
 
+import InsideModal from './InsideModal';
 import { Codes } from '../database';
 import styles from '../Style';
 import { copyToClipboard } from '../Util';
@@ -73,7 +74,8 @@ export default class HistoryView extends PureComponent {
           <Text>Date: {item.time}</Text>
           <Text>Type: {item.type}</Text>
           <View style={localStyles.indicator} />
-          <Text style={localStyles.dataText}>{item.data}</Text>
+          <Text numberOfLines={2}
+            style={localStyles.dataText}>{item.data}</Text>
         </View>
       </TouchableOpacity>
     </Swipeable>
@@ -103,9 +105,7 @@ export default class HistoryView extends PureComponent {
         <Modal isVisible={this.state.isModalVisible}
           onBackButtonPress={this._closeModal} >
           <View style={styles.modalContent}>
-            <Text>Date: {this.state.time}</Text>
-            <Text>Type: {this.state.type}</Text>
-            <Text>Data: {this.state.data}</Text>
+            <InsideModal time={this.state.time} type={this.state.type} data={this.state.data} />
             <View style={styles.buttons}>
               <TouchableOpacity onPress={this._closeModal}
                 style={styles.button}>

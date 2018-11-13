@@ -29,8 +29,8 @@ export default class App extends Component {
         tabBarActiveTextColor={'white'}
         tabBarInactiveTextColor={'#fff9'}
         tabBarPosition={'bottom'}>
-        <CameraView tabLabel={'Scan'} cameraOn={this.state.cameraOn} />
-        <HistoryView tabLabel={'History'} />
+        <CameraView tabLabel={'SCAN'} cameraOn={this.state.cameraOn} />
+        <HistoryView tabLabel={'HISTORY'} />
       </ScrollableTabView>
     );
   }
