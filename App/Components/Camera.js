@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react';
-import { Text, View, TouchableOpacity } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { RNCamera } from 'react-native-camera';
 import Modal from 'react-native-modal';
 import moment from 'moment';
@@ -36,13 +36,17 @@ export default class CameraView extends PureComponent {
   render() {
     return (
       <View style={styles.container}>
-        <RNCamera
+        {this.props.cameraOn && <RNCamera
           ref={ref => { this.camera = ref }}
           style={styles.preview}
           type={RNCamera.Constants.Type.back}
           permissionDialogTitle={'Permission to use camera'}
           permissionDialogMessage={'We need your permission to use your camera phone'}
-          onBarCodeRead={this._openModal} />
+          onBarCodeRead={this._openModal}>
+          <View style={localStyles.rectangleContainer}>
+            <View style={localStyles.rectangle} />
+          </View>
+        </RNCamera>}
         <Modal isVisible={this.state.isModalVisible}
           onBackButtonPress={this._closeModal} >
           <View style={styles.modalContent}>
@@ -65,3 +69,19 @@ export default class CameraView extends PureComponent {
     );
   }
 }
+
+const localStyles = StyleSheet.create({
+  rectangleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  rectangle: {
+    height: 250,
+    width: 250,
+    borderWidth: 2,
+    borderColor: '#00FF00',
+    backgroundColor: 'transparent',
+  },
+})

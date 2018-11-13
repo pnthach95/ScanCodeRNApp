@@ -2,6 +2,7 @@ import React, { PureComponent } from 'react';
 import { Text, View, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import Modal from 'react-native-modal';
 import Swipeable from 'react-native-swipeable';
+import Toast from 'react-native-root-toast';
 
 import { Codes } from '../database';
 import styles from '../Style';
@@ -25,10 +26,6 @@ export default class HistoryView extends PureComponent {
       this.setState({ list: [...this.state.list, changed[0]] });
       console.log('HistoryView.onInsert', changed);
     });
-    Codes.onRemove(({ changed }) => {
-      let data = this.state.list.filter((value, index) => value.id != changed.id)
-      this.setState({ list: data })
-    });
   }
 
   _closeModal = () => this.setState({ isModalVisible: false });
@@ -49,7 +46,20 @@ export default class HistoryView extends PureComponent {
 
   _keyExtractor = (item, index) => `code ${index}`
 
-  _removeItem = (item) => () => Codes.remove(item.id)
+  _removeItem = (item) => () => {
+    console.log('HistoryView._removeItem');
+    let toast = Toast.show('Deleted', {
+      duration: Toast.durations.SHORT,
+      position: Toast.positions.BOTTOM,
+      shadow: true,
+      animation: true,
+      hideOnPress: true,
+      delay: 0
+    });
+    Codes.remove(item.id);
+    let data = this.state.list.filter((value, index) => value.id != item.id);
+    this.setState({ list: data });
+  }
 
   rightButtons = <View style={localStyles.delete}>
     <Text style={styles.whiteText}>Delete</Text>
@@ -61,8 +71,9 @@ export default class HistoryView extends PureComponent {
       <TouchableOpacity onPress={this._openModal(item)}>
         <View style={localStyles.item}>
           <Text>Date: {item.time}</Text>
-          <Text>{item.data}</Text>
           <Text>Type: {item.type}</Text>
+          <View style={localStyles.indicator} />
+          <Text style={localStyles.dataText}>{item.data}</Text>
         </View>
       </TouchableOpacity>
     </Swipeable>
@@ -93,8 +104,8 @@ export default class HistoryView extends PureComponent {
           onBackButtonPress={this._closeModal} >
           <View style={styles.modalContent}>
             <Text>Date: {this.state.time}</Text>
-            <Text>Data: {this.state.data}</Text>
             <Text>Type: {this.state.type}</Text>
+            <Text>Data: {this.state.data}</Text>
             <View style={styles.buttons}>
               <TouchableOpacity onPress={this._closeModal}
                 style={styles.button}>
@@ -115,10 +126,11 @@ export default class HistoryView extends PureComponent {
 const localStyles = StyleSheet.create({
   item: {
     padding: 10,
-    marginHorizontal: 10,
-    marginVertical: 5,
-    borderRadius: 10,
     backgroundColor: 'white',
+    borderBottomColor: '#666',
+    borderTopColor: '#666',
+    borderBottomWidth: 1,
+    borderTopWidth: 1
   },
   removeAll: {
     backgroundColor: 'red',
@@ -130,11 +142,18 @@ const localStyles = StyleSheet.create({
   },
   delete: {
     padding: 10,
-    marginVertical: 5,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
     flex: 1,
     justifyContent: 'center',
     backgroundColor: 'red'
+  },
+  dataText: {
+    fontSize: 18
+  },
+  indicator: {
+    height: 1,
+    backgroundColor: '#ddd',
+    width: '100%',
+    alignSelf: 'center',
+    margin: 4,
   }
 })
