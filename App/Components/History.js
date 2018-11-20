@@ -1,13 +1,14 @@
 import React, { PureComponent } from 'react';
-import { Text, View, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { Text, View, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import Modal from 'react-native-modal';
 import Swipeable from 'react-native-swipeable';
-import Toast from 'react-native-root-toast';
+import { Queryable } from 'vasern';
 
 import InsideModal from './InsideModal';
 import { Codes } from '../database';
 import styles from '../Style';
-import { copyToClipboard } from '../Util';
+import { copyToClipboard, timeFormat } from '../Util';
+import moment from 'moment';
 
 export default class HistoryView extends PureComponent {
   state = {
@@ -15,51 +16,74 @@ export default class HistoryView extends PureComponent {
     isModalVisible: false,
     data: '',
     type: '',
-    time: ''
+    time: '',
+    deleteItem: {
+      index: -1,
+      item: {}
+    },
+    hitUndo: false,
+    showUndo: false
   };
+
+  undoItem = {}
+  undoList = []
 
   componentDidMount() {
     Codes.onLoaded(() => {
       let data = Codes.data();
+      data = data.sort((a, b) => moment(a.time, timeFormat).isBefore(moment(b.time, timeFormat)));
       this.setState({ list: data });
     });
     Codes.onInsert(({ changed }) => {
-      this.setState({ list: [...this.state.list, changed[0]] });
-      console.log('HistoryView.onInsert', changed);
+      if (this.state.hitUndo) {
+        this.setState({ hitUndo: false });
+      } else {
+        this.setState({ list: [changed[0], ...this.state.list] });
+      }
     });
   }
 
   _closeModal = () => this.setState({ isModalVisible: false });
 
   _openModal = ({ data, type, time }) => () => {
-    console.log('HistoryView._openModal');
     this.setState({ isModalVisible: true, data: data, type: type, time: time });
   }
 
   _removeAll = () => {
     Codes.perform(function (db) {
       Codes.data().forEach(function (item) {
-        db.remove(item)
+        db.remove(item);
       })
     });
     this.setState({ list: [] });
   }
 
+  _askRemoveAll = () => {
+    Alert.alert('Remove all code?', '', [
+      { text: 'Cancel', onPress: () => { }, style: 'cancel' },
+      { text: 'OK', onPress: this._removeAll }]);
+  }
+
   _keyExtractor = (item, index) => `code ${index}`
 
   _removeItem = (item) => () => {
-    console.log('HistoryView._removeItem');
-    let toast = Toast.show('Deleted', {
-      duration: Toast.durations.SHORT,
-      position: Toast.positions.BOTTOM,
-      shadow: true,
-      animation: true,
-      hideOnPress: true,
-      delay: 0
-    });
     Codes.remove(item.id);
+    this.undoList = [...this.state.list];
+    this.undoItem = item;
     let data = this.state.list.filter((value, index) => value.id != item.id);
-    this.setState({ list: data });
+    this.setState({ list: data, showUndo: true });
+  }
+
+  _onUndoItem = () => {
+    this.setState({ list: this.undoList, hitUndo: true, showUndo: false });
+    let obj = Codes.get({ time: this.undoItem.time })
+    if (obj === undefined) {
+      Codes.insert({
+        time: this.undoItem.time,
+        data: this.undoItem.data,
+        type: this.undoItem.type
+      }, save = true)
+    }
   }
 
   rightButtons = <View style={localStyles.delete}>
@@ -81,25 +105,29 @@ export default class HistoryView extends PureComponent {
     </Swipeable>
 
   render() {
-    if (this.state.list.length == 0)
-      return (
-        <View style={[styles.containerWhite, styles.center]}>
-          <Text>No data</Text>
-        </View>
-      );
-
     return (
       <View style={styles.containerWhite}>
-        <FlatList
-          data={this.state.list}
-          initialNumToRender={8}
-          keyExtractor={this._keyExtractor}
-          renderItem={this._renderItem} />
+        {this.state.list.length == 0 ?
+          <View style={[styles.containerWhite, styles.center]}>
+            <Text>No data</Text>
+          </View> :
+          <FlatList
+            data={this.state.list}
+            initialNumToRender={8}
+            keyExtractor={this._keyExtractor}
+            renderItem={this._renderItem} />}
+
         <View style={localStyles.footer}>
-          <TouchableOpacity onPress={this._removeAll}
-            style={[localStyles.removeAll, styles.center]}>
-            <Text style={styles.whiteText}>Clean History</Text>
-          </TouchableOpacity>
+          {this.state.showUndo &&
+            <TouchableOpacity onPress={this._onUndoItem}
+              style={[localStyles.undo, styles.center]}>
+              <Text style={styles.whiteText}>Undo</Text>
+            </TouchableOpacity>}
+          {this.state.list.length != 0 &&
+            <TouchableOpacity onPress={this._askRemoveAll}
+              style={[localStyles.removeAll, styles.center]}>
+              <Text style={styles.whiteText}>Clean History</Text>
+            </TouchableOpacity>}
         </View>
 
         <Modal isVisible={this.state.isModalVisible}
@@ -135,6 +163,11 @@ const localStyles = StyleSheet.create({
   removeAll: {
     backgroundColor: 'red',
     padding: 10
+  },
+  undo: {
+    backgroundColor: 'green',
+    padding: 10,
+    marginBottom: 10
   },
   footer: {
     backgroundColor: 'white',

@@ -13,3 +13,5 @@ export const copyToClipboard = (data) => () => {
     delay: 0
   });
 }
+
+export const timeFormat = 'dddd, MMMM Do YYYY, h:mm:ss a'
